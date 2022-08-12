@@ -40,13 +40,9 @@ class _MyAppState extends State<MyApp> {
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
-    Geofence.initialize();
-    Geofence.startListening(GeolocationEvent.entry, (entry) {
-      scheduleNotification("Entry of a georegion", "Welcome to: ${entry.id}");
-    });
-
-    Geofence.startListening(GeolocationEvent.exit, (entry) {
-      scheduleNotification("Exit of a georegion", "Byebye to: ${entry.id}");
+    Geofence.onGeofenceEventReceived((geolocation, event) async {
+      scheduleNotification(
+          "${event.name} of a georegion", "Welcome to: $geolocation");
     });
 
     setState(() {});
@@ -122,7 +118,7 @@ class _MyAppState extends State<MyApp> {
                 child: Text("Listen to background updates"),
                 onPressed: () {
                   Geofence.startListeningForLocationChanges();
-                  Geofence.backgroundLocationUpdated.stream.listen((event) {
+                  Geofence.instance.backgroundLocationUpdated.stream.listen((event) {
                     scheduleNotification("You moved significantly",
                         "a significant location change just happened.");
                   });

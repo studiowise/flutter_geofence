@@ -2,4 +2,10 @@
   package="com.intivoto.flutter_geofence">
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <application>
+        <service
+            android:name=".FlutterGeofenceBackgroundService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
+    </application>
 </manifest>

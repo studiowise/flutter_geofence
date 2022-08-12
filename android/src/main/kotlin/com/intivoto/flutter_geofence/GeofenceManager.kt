@@ -6,6 +6,8 @@ import android.content.Intent
 import android.location.Location
 import android.os.Build
 import android.os.Looper
+import android.os.Parcel
+import android.os.Parcelable
 import android.renderscript.RenderScript
 import android.util.Log
 import com.google.android.gms.location.*
@@ -19,19 +21,51 @@ enum class GeoEvent {
 }
 
 data class GeoRegion(
-        val id: String,
-        val radius: Float,
-        val latitude: Double,
-        val longitude: Double,
-        val events: List<GeoEvent>
-)
+    val id: String,
+    val radius: Float,
+    val latitude: Double,
+    val longitude: Double,
+    val events: List<GeoEvent>
+) : Parcelable {
+    constructor(parcel: Parcel) : this(
+        parcel.readString()!!,
+        parcel.readFloat(),
+        parcel.readDouble(),
+        parcel.readDouble(),
+        parcel.readString()?.split(",")?.map { GeoEvent.valueOf(it) } ?: emptyList()
+    )
 
-fun GeoRegion.serialized(): Map<*, *> {
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(id)
+        parcel.writeFloat(radius)
+        parcel.writeDouble(latitude)
+        parcel.writeDouble(longitude)
+        parcel.writeString(events.joinToString(",") { it.name })
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<GeoRegion> {
+        override fun createFromParcel(parcel: Parcel): GeoRegion {
+            return GeoRegion(parcel)
+        }
+
+        override fun newArray(size: Int): Array<GeoRegion?> {
+            return arrayOfNulls(size)
+        }
+    }
+
+}
+
+fun GeoRegion.serialized(): Map<String, Any?> {
     return hashMapOf(
         "id" to id,
         "radius" to radius,
         "latitude" to latitude,
-        "longitude" to longitude
+        "longitude" to longitude,
+        "event" to events.firstOrNull()?.name
     )
 }
 
@@ -43,32 +77,35 @@ fun GeoRegion.convertRegionToGeofence(): Geofence {
     }
 
     return Geofence.Builder()
-            .setRequestId(id)
-            .setCircularRegion(
-                    latitude,
-                    longitude,
-                    radius
-            )
-            .setExpirationDuration(NEVER_EXPIRE)
-            .setTransitionTypes(transitionType)
-            .build()
+        .setRequestId(id)
+        .setCircularRegion(
+            latitude,
+            longitude,
+            radius
+        ).setLoiteringDelay(5 * 60 * 1000)// 5mins
+        .setExpirationDuration(NEVER_EXPIRE)
+        .setTransitionTypes(transitionType)
+        .build()
 }
 
-class GeofenceManager(context: Context,
-                      callback: (GeoRegion) -> Unit,
-                      val locationUpdate: (Location) -> Unit, val backgroundUpdate: (Location) -> Unit) {
+class GeofenceManager(
+    context: Context,
+    val locationUpdate: (Location) -> Unit, val backgroundUpdate: (Location) -> Unit
+) {
 
     private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
-    init {
-        GeofenceBroadcastReceiver.callback = callback
-    }
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+            PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
         } else {
             PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
@@ -76,7 +113,10 @@ class GeofenceManager(context: Context,
 
 
     fun startMonitoring(geoRegion: GeoRegion) {
-        geofencingClient.addGeofences(getGeofencingRequest(geoRegion.convertRegionToGeofence()), geofencePendingIntent)?.run {
+        geofencingClient.addGeofences(
+            getGeofencingRequest(geoRegion.convertRegionToGeofence()),
+            geofencePendingIntent
+        )?.run {
             addOnSuccessListener {
                 // Geofences added
                 Log.d("DC", "added them")
@@ -119,7 +159,11 @@ class GeofenceManager(context: Context,
             }
         }
 
-        fusedLocationClient.requestLocationUpdates(LocationRequest.create(), locationCallback, Looper.getMainLooper())
+        fusedLocationClient.requestLocationUpdates(
+            LocationRequest.create(),
+            locationCallback,
+            Looper.getMainLooper()
+        )
     }
 
     fun getUserLocation() {
@@ -138,14 +182,19 @@ class GeofenceManager(context: Context,
 
     private val backgroundLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult ?: return
+            locationResult
             backgroundUpdate(locationResult.lastLocation)
         }
     }
 
     fun startListeningForLocationChanges() {
-        val request = LocationRequest().setInterval(900000L).setFastestInterval(900000L).setPriority(PRIORITY_LOW_POWER)
-        fusedLocationClient.requestLocationUpdates(request, backgroundLocationCallback, Looper.getMainLooper())
+        val request = LocationRequest().setInterval(900000L).setFastestInterval(900000L)
+            .setPriority(PRIORITY_LOW_POWER)
+        fusedLocationClient.requestLocationUpdates(
+            request,
+            backgroundLocationCallback,
+            Looper.getMainLooper()
+        )
     }
 
     fun stopListeningForLocationChanges() {
