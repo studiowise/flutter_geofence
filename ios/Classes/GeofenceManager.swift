@@ -12,6 +12,17 @@ import CoreLocation
 enum GeoEvent {
 	case entry
 	case exit
+    
+    var description: String {
+       get {
+         switch self {
+           case .entry:
+             return "entry"
+           case .exit:
+             return "exit"
+         }
+       }
+     }
 }
 
 struct GeoRegion {
@@ -24,7 +35,8 @@ struct GeoRegion {
 
 extension GeoRegion {
 	func toDictionary() -> [AnyHashable: Any] {
-		return ["id": id, "radius": radius, "latitude": latitude, "longitude": longitude]
+        let event:GeoEvent = events.first ?? GeoEvent.entry
+        return ["id": id, "radius": radius, "latitude": latitude, "longitude": longitude, "event": event.description]
 	}
 }
 
@@ -88,6 +100,7 @@ class GeofenceManager: NSObject, CLLocationManagerDelegate {
 		if let knownState = regionsState[region], state != .unknown, state != knownState {
 			if let region = region as? CLCircularRegion {
 				let identifier = region.identifier
+                print("event received: region: \(region)")
 				if state == .inside && region.notifyOnEntry {
 					let georegion = GeoRegion(id: identifier, radius: region.radius, latitude: region.center.latitude, longitude: region.center.longitude, events: [.entry])
 					callback(georegion)

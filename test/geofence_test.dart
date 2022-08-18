@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_geofence/geofence.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('geofence');
+  const MethodChannel channel = MethodChannel('ph.josephmangmang/geofence');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 

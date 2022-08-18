@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class FlutterGeofenceBackgroundService extends JobIntentService {
-    private static final String TAG = "FLTFireMsgService";
+    private static final String TAG = "FGeofenceService";
 
     private static final List<Intent> messagingQueue =
             Collections.synchronizedList(new LinkedList<>());

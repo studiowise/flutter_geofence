@@ -14,29 +14,30 @@ import 'package:flutter_geofence/types.dart';
 // any necessary processing in Dart (e.g., populating a custom object) before
 // invoking the provided callback.
 @pragma('vm:entry-point')
-void _firebaseMessagingCallbackDispatcher() {
+void _geofenceCallbackDispatcher() {
   // Initialize state necessary for MethodChannels.
   WidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel _channel = MethodChannel('geofence_background');
+  const MethodChannel _channel = MethodChannel('ph.josephmangmang/geofence_background');
 
   // This is where we handle background events from the native portion of the plugin.
   _channel.setMethodCallHandler((MethodCall call) async {
+    print("geofence_background: ${call.method}");
     if (call.method == 'GeofenceBackground#onMessage') {
       final CallbackHandle handle =
-      CallbackHandle.fromRawHandle(call.arguments['userCallbackHandle']);
+          CallbackHandle.fromRawHandle(call.arguments['userCallbackHandle']);
 
       // PluginUtilities.getCallbackFromHandle performs a lookup based on the
       // callback handle and returns a tear-off of the original callback.
       final closure = PluginUtilities.getCallbackFromHandle(handle)!
-      as Future<void> Function(Geolocation, GeolocationEvent event);
+          as Future<void> Function(Geolocation, GeolocationEvent event);
 
       try {
         Map<String, dynamic> messageMap =
-        Map<String, dynamic>.from(call.arguments['geoRegion']);
+            Map<String, dynamic>.from(call.arguments['geoRegion']);
         final Geolocation geoLocation = Geolocation.fromMap(messageMap);
-        final GeolocationEvent event = GeolocationEvent.values.firstWhere((
-            element) => element.name == messageMap['event'],
+        final GeolocationEvent event = GeolocationEvent.values.firstWhere(
+            (element) => element.name == messageMap['event'],
             orElse: () => GeolocationEvent.entry);
 
         await closure(geoLocation, event);
@@ -66,20 +67,20 @@ class MethodChannelGeofence extends GeofencePlatform {
       switch (call.method) {
         case 'backgroundLocationUpdated':
           Coordinate coordinate =
-          Coordinate(call.arguments["lat"], call.arguments["lng"]);
+              Coordinate(call.arguments["lat"], call.arguments["lng"]);
           GeofencePlatform.backgroundLocationUpdated.sink.add(coordinate);
           break;
         case 'userLocationUpdated':
           Coordinate coordinate =
-          Coordinate(call.arguments["lat"], call.arguments["lng"]);
+              Coordinate(call.arguments["lat"], call.arguments["lng"]);
           GeofencePlatform.userLocationUpdated.sink.add(coordinate);
           break;
         case 'Geofence#onBackgroundMessage':
           Map<String, dynamic> geolocationMap =
-          Map<String, dynamic>.from(call.arguments);
+              Map<String, dynamic>.from(call.arguments);
 
           final event = GeolocationEvent.values.firstWhere(
-                  (element) => element.name == call.arguments["event"],
+              (element) => element.name == call.arguments["event"],
               orElse: () => GeolocationEvent.entry);
 
           return GeofencePlatform.onBackgroundGeoEvent?.call(
@@ -106,9 +107,7 @@ class MethodChannelGeofence extends GeofencePlatform {
 
   /// The [MethodChannel] to which calls will be delegated.
   @visibleForTesting
-  static const MethodChannel channel = MethodChannel('geofence');
-
-
+  static const MethodChannel channel = MethodChannel('ph.josephmangmang/geofence');
 
   /// Adds a geolocation for a certain geo-event
   @override
@@ -124,8 +123,8 @@ class MethodChannelGeofence extends GeofencePlatform {
 
   /// Stops listening to a geolocation for a certain geo-event
   @override
-  Future<void> removeGeolocation(Geolocation geolocation,
-      GeolocationEvent event) {
+  Future<void> removeGeolocation(
+      Geolocation geolocation, GeolocationEvent event) {
     return channel.invokeMethod("removeRegion", {
       "lng": geolocation.longitude,
       "lat": geolocation.latitude,
@@ -166,16 +165,16 @@ class MethodChannelGeofence extends GeofencePlatform {
   @override
   Future<void> registerBackgroundGeoEventHandler(
       BackgroundGeofenceEventHandler handler) async {
-    if (defaultTargetPlatform != TargetPlatform.android) {
-      return;
-    }
+    // if (defaultTargetPlatform != TargetPlatform.android) {
+    //   return;
+    // }
 
     if (!_bgHandlerInitialized) {
       _bgHandlerInitialized = true;
-      final CallbackHandle bgHandle = PluginUtilities.getCallbackHandle(
-          _firebaseMessagingCallbackDispatcher)!;
+      final CallbackHandle bgHandle =
+          PluginUtilities.getCallbackHandle(_geofenceCallbackDispatcher)!;
       final CallbackHandle userHandle =
-      PluginUtilities.getCallbackHandle(handler)!;
+          PluginUtilities.getCallbackHandle(handler)!;
       await channel.invokeMapMethod('Geofence#startBackgroundIsolate', {
         'pluginCallbackHandle': bgHandle.toRawHandle(),
         'userCallbackHandle': userHandle.toRawHandle(),

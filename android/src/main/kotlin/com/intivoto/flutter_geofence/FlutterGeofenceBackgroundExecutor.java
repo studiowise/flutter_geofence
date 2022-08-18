@@ -285,7 +285,7 @@ public class FlutterGeofenceBackgroundExecutor implements MethodCallHandler {
         // This channel is also responsible for sending requests from Android to Dart to execute Dart
         // callbacks in the background isolate.
         backgroundChannel =
-                new MethodChannel(isolate, "geofence_background");
+                new MethodChannel(isolate, "ph.josephmangmang/geofence_background");
         backgroundChannel.setMethodCallHandler(this);
     }
 }

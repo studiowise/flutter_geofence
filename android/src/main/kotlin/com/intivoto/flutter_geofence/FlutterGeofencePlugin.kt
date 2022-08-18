@@ -50,7 +50,7 @@ class FlutterGeofencePlugin() : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel =
-            MethodChannel(flutterPluginBinding.binaryMessenger, "geofence")
+            MethodChannel(flutterPluginBinding.binaryMessenger, "ph.josephmangmang/geofence")
         channel.setMethodCallHandler(this)
     }
 
