@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_geofence/Geolocation.dart';
+import 'package:flutter_geofence/platform_interface/platform_interface.dart';
+import 'package:flutter_geofence/types.dart';
 
 export 'Geolocation.dart';
 
@@ -15,107 +16,74 @@ class Coordinate {
 }
 
 class Geofence {
-  static const MethodChannel _channel = const MethodChannel('geofence');
+  // Cached and lazily loaded instance of [GeofencePlatform] to avoid
+  // creating a [MethodChannelFirebaseMessaging] when not needed or creating an
+  // instance with the default app before a user specifies an app.
+  GeofencePlatform? _delegatePackingProperty;
 
-  static GeofenceCallback _entryCallback = (location) {};
-  static GeofenceCallback _exitCallback = (location) {};
+  static Map<String, Geofence> _geofenceInstances = {};
 
-  //ignore: close_sinks
-  static StreamController<Coordinate> _userLocationUpdated =
-      new StreamController<Coordinate>();
-  // ignore: close_sinks
-  static StreamController<Coordinate> backgroundLocationUpdated =
-      new StreamController<Coordinate>();
-  static Stream<Coordinate>? _broadcastLocationStream;
+  GeofencePlatform get _delegate {
+    return _delegatePackingProperty ??= GeofencePlatform.instanceFor();
+  }
+
+  Geofence._();
+
+  static Geofence get instance {
+    return Geofence._instanceFor();
+  }
+
+  factory Geofence._instanceFor() {
+    return _geofenceInstances.putIfAbsent('geofence_app', () {
+      return Geofence._();
+    });
+  }
+
+  StreamController<Coordinate> get backgroundLocationUpdated =>
+      GeofencePlatform.backgroundLocationUpdated;
 
   /// Adds a geolocation for a certain geo-event
   static Future<void> addGeolocation(
       Geolocation geolocation, GeolocationEvent event) {
-    return _channel.invokeMethod("addRegion", {
-      "lng": geolocation.longitude,
-      "lat": geolocation.latitude,
-      "id": geolocation.id,
-      "radius": geolocation.radius,
-      "event": event.toString(),
-    });
+    return instance._delegate.addGeolocation(geolocation, event);
   }
 
   /// Stops listening to a geolocation for a certain geo-event
   static Future<void> removeGeolocation(
       Geolocation geolocation, GeolocationEvent event) {
-    return _channel.invokeMethod("removeRegion", {
-      "lng": geolocation.longitude,
-      "lat": geolocation.latitude,
-      "id": geolocation.id,
-      "radius": geolocation.radius,
-      "event": event.toString(),
-    });
+    return instance._delegate.removeGeolocation(geolocation, event);
   }
 
   /// Stops listening to all regions
   static Future<void> removeAllGeolocations() {
-    return _channel.invokeMethod("removeRegions", null);
+    return instance._delegate.removeAllGeolocations();
   }
 
   /// Get the latest location the user has been.
-  static Future<Coordinate?> getCurrentLocation() async {
-    _channel.invokeMethod("getUserLocation", null);
-    return _broadcastLocationStream?.first;
+  static Future<Coordinate?> getCurrentLocation() {
+    return instance._delegate.getCurrentLocation();
   }
 
   static Future<void> startListeningForLocationChanges() {
-    return _channel.invokeMethod("startListeningForLocationChanges");
+    return instance._delegate.startListeningForLocationChanges();
   }
 
   static Future<void> stopListeningForLocationChanges() {
-    return _channel.invokeMethod("stopListeningForLocationChanges");
+    return instance._delegate.stopListeningForLocationChanges();
   }
 
   static void requestPermissions() {
-    _channel.invokeMethod("requestPermissions", null);
+    instance._delegate.requestPermissions();
   }
 
-  /// Startup; needed to setup all callbacks and prevent race-issues.
-  static void initialize() {
-    var completer = new Completer<void>();
-    _broadcastLocationStream = _userLocationUpdated.stream.asBroadcastStream();
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == "entry") {
-        Geolocation location = Geolocation(
-            latitude: call.arguments["latitude"] as double,
-            longitude: call.arguments["longitude"] as double,
-            radius: call.arguments["radius"] as double,
-            id: call.arguments["id"] as String);
-        _entryCallback(location);
-      } else if (call.method == "exit") {
-        Geolocation location = Geolocation(
-            latitude: call.arguments["latitude"] as double,
-            longitude: call.arguments["longitude"] as double,
-            radius: call.arguments["radius"] as double,
-            id: call.arguments["id"] as String);
-        _exitCallback(location);
-      } else if (call.method == "userLocationUpdated") {
-        Coordinate coordinate =
-            Coordinate(call.arguments["lat"], call.arguments["lng"]);
-        _userLocationUpdated.sink.add(coordinate);
-      } else if (call.method == "backgroundLocationUpdated") {
-        Coordinate coordinate =
-            Coordinate(call.arguments["lat"], call.arguments["lng"]);
-        backgroundLocationUpdated.sink.add(coordinate);
-      }
-      completer.complete();
-    });
-  }
-
-  /// Set a callback block for a specific geo-event
-  static void startListening(GeolocationEvent event, GeofenceCallback entry) {
-    switch (event) {
-      case GeolocationEvent.entry:
-        _entryCallback = entry;
-        break;
-      case GeolocationEvent.exit:
-        _exitCallback = entry;
-        break;
-    }
+  // ignore: use_setters_to_change_properties
+  /// Set a message handler function which is called when the app is in the
+  /// background or terminated.
+  ///
+  /// This provided handler must be a top-level function and cannot be
+  /// anonymous otherwise an [ArgumentError] will be thrown.
+  // ignore: use_setters_to_change_properties
+  static void onGeofenceEventReceived(BackgroundGeofenceEventHandler handler) {
+    GeofencePlatform.onBackgroundGeoEvent = handler;
   }
 }

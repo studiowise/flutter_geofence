@@ -1,29 +1,109 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
 import 'package:flutter_geofence/geofence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:rxdart/subjects.dart';
 
-void main() => runApp(MyApp());
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    new FlutterLocalNotificationsPlugin();
+
+void main() => runApp(MaterialApp(
+      home: Scaffold(body: MyApp()),
+    ));
+BehaviorSubject<String> geoeventStream = BehaviorSubject();
 
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      new FlutterLocalNotificationsPlugin();
+  static final calcabenApartment = <String, dynamic>{
+    'lat': 9.627392,
+    'long': 123.8784023,
+    'name': 'Calcaben Apartment',
+    'radius': 150.0
+  };
+  final enterLocation = Geolocation(
+    latitude: calcabenApartment['lat'] as double,
+    longitude: calcabenApartment['long'] as double,
+    radius: calcabenApartment['radius'] as double,
+    id: '${calcabenApartment['name']}_enter',
+  );
+  final exitLocation = Geolocation(
+    latitude: calcabenApartment['lat'] as double,
+    longitude: calcabenApartment['long'] as double,
+    radius: calcabenApartment['radius'] as double,
+    id: '${calcabenApartment['name']}_exit',
+  );
+  String _message = "Message\n\n";
+  late StreamSubscription<String> streamSubscription;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    _init();
+    streamSubscription = geoeventStream.listen((event) {
+      addLog(event);
+      scheduleNotification('Event', event);
+    });
+    Geofence.onGeofenceEventReceived(geofenceEventCallback);
+  }
 
-// initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  @override
+  void dispose() {
+    super.dispose();
+    streamSubscription.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Container(
+          alignment: AlignmentDirectional.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                calcabenApartment['name'],
+                style: TextStyle(fontSize: 30),
+              ),
+              MaterialButton(
+                color: Colors.lightBlueAccent,
+                child: Text('Add Coordinates'),
+                onPressed: () {
+                  addGeolocation(enterLocation, GeolocationEvent.entry);
+                  addGeolocation(exitLocation, GeolocationEvent.exit);
+                  showSnackbar(
+                      '${calcabenApartment['name']} added to geofence');
+                },
+              ),
+              MaterialButton(
+                color: Colors.lightBlueAccent,
+                child: Text('Remove Coordinates'),
+                onPressed: () {
+                  Geofence.removeAllGeolocations();
+                },
+              ),
+              SingleChildScrollView(child: Text(_message))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _init() async {
     var initializationSettingsAndroid =
         new AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS =
@@ -32,128 +112,61 @@ class _MyAppState extends State<MyApp> {
         android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onSelectNotification: null);
+
+    if (await Permission.location.request().isGranted) {
+      final locationAlways =
+          await Permission.locationAlways.request().isGranted;
+      if (locationAlways) {
+        Geofence.requestPermissions();
+      } else {
+        // don't continue missing permission access
+        return;
+      }
+    }
+    Geofence.startListeningForLocationChanges();
+    await Geofence.removeAllGeolocations();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-    Geofence.initialize();
-    Geofence.startListening(GeolocationEvent.entry, (entry) {
-      scheduleNotification("Entry of a georegion", "Welcome to: ${entry.id}");
+  void addGeolocation(Geolocation geolocation, GeolocationEvent event) {
+    Geofence.addGeolocation(geolocation, event).then((onValue) {
+      final message =
+          '${event.name.split('.').last}: Your geofence has been added! ${geolocation.id}';
+      print(message);
+      addLog(message);
+    }).catchError((error) {
+      print('failed with $error');
     });
+  }
 
-    Geofence.startListening(GeolocationEvent.exit, (entry) {
-      scheduleNotification("Exit of a georegion", "Byebye to: ${entry.id}");
+  void showSnackbar(String s) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+  }
+
+  void addLog(String s) {
+    setState(() {
+      _message = "$_message$s\n";
     });
-
-    setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: ListView(
-          children: <Widget>[
-            Text('Running on: $_platformVersion\n'),
-            RaisedButton(
-              child: Text("Add region"),
-              onPressed: () {
-                Geolocation location = Geolocation(
-                    latitude: 50.853410,
-                    longitude: 3.354470,
-                    radius: 50.0,
-                    id: "Kerkplein13");
-                Geofence.addGeolocation(location, GeolocationEvent.entry)
-                    .then((onValue) {
-                  print("great success");
-                  scheduleNotification(
-                      "Georegion added", "Your geofence has been added!");
-                }).catchError((onError) {
-                  print("great failure");
-                });
-              },
-            ),
-            RaisedButton(
-              child: Text("Add neighbour region"),
-              onPressed: () {
-                Geolocation location = Geolocation(
-                    latitude: 50.853440,
-                    longitude: 3.354490,
-                    radius: 50.0,
-                    id: "Kerkplein15");
-                Geofence.addGeolocation(location, GeolocationEvent.entry)
-                    .then((onValue) {
-                  print("great success");
-                  scheduleNotification(
-                      "Georegion added", "Your geofence has been added!");
-                }).catchError((onError) {
-                  print("great failure");
-                });
-              },
-            ),
-            RaisedButton(
-              child: Text("Remove regions"),
-              onPressed: () {
-                Geofence.removeAllGeolocations();
-              },
-            ),
-            RaisedButton(
-              child: Text("Request Permissions"),
-              onPressed: () {
-                Geofence.requestPermissions();
-              },
-            ),
-            RaisedButton(
-                child: Text("get user location"),
-                onPressed: () {
-                  Geofence.getCurrentLocation().then((coordinate) {
-                    print(
-                        "great got latitude: ${coordinate?.latitude} and longitude: ${coordinate?.longitude}");
-                  });
-                }),
-            RaisedButton(
-                child: Text("Listen to background updates"),
-                onPressed: () {
-                  Geofence.startListeningForLocationChanges();
-                  Geofence.backgroundLocationUpdated.stream.listen((event) {
-                    scheduleNotification("You moved significantly",
-                        "a significant location change just happened.");
-                  });
-                }),
-            RaisedButton(
-                child: Text("Stop listening to background updates"),
-                onPressed: () {
-                  Geofence.stopListeningForLocationChanges();
-                }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void scheduleNotification(String title, String subtitle) {
+  Future<void> scheduleNotification(String title, String subtitle) async {
     print("scheduling one with $title and $subtitle");
     var rng = new Random();
-    Future.delayed(Duration(seconds: 5)).then((result) async {
-      var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-          'your channel id', 'your channel name',
-          importance: Importance.high,
-          priority: Priority.high,
-          ticker: 'ticker');
-      var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-      var platformChannelSpecifics = NotificationDetails(
-          android: androidPlatformChannelSpecifics,
-          iOS: iOSPlatformChannelSpecifics);
-      await flutterLocalNotificationsPlugin.show(
-          rng.nextInt(100000), title, subtitle, platformChannelSpecifics,
-          payload: 'item x');
-    });
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'your channel id', 'your channel name',
+        importance: Importance.high, priority: Priority.high, ticker: 'ticker');
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+        rng.nextInt(100000), title, subtitle, platformChannelSpecifics,
+        payload: 'item x');
   }
+}
+
+Future<void> geofenceEventCallback(
+    Geolocation geolocation, GeolocationEvent event) async {
+  print(
+      'geofenceEventCallback: geolocation:${geolocation.id} event:${event.name}');
+  geoeventStream.add('geolocation:${geolocation.id} event:${event.name}');
 }
