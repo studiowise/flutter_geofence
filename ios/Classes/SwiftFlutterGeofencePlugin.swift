@@ -23,6 +23,7 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
     var _registrar: FlutterPluginRegistrar!
     var _mainChannel: FlutterMethodChannel!
     var _backgroundChannel: FlutterMethodChannel!
+    var isCallbackDispatcherReady = false
 	
     public static func setPluginRegistrantCallback(_ callback: @escaping FlutterPluginRegistrantCallback) {
         registerPlugins = callback
@@ -81,6 +82,9 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
        }
        
        private func startLocationService(_ callbackDispatcherHandle: Int64) {
+           if(isCallbackDispatcherReady){
+               return
+           }
            
            guard let info: FlutterCallbackInformation = FlutterCallbackCache
                .lookupCallbackInformation(callbackDispatcherHandle) else {
@@ -99,6 +103,7 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
            }
            registerPlugins(_headlessRunner)
            _registrar.addMethodCallDelegate(self, channel:_backgroundChannel)
+           isCallbackDispatcherReady = true
        }
     
 	public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
