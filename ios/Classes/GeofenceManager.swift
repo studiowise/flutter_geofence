@@ -168,7 +168,6 @@ class BackgroundLocationListener: NSObject, CLLocationManagerDelegate {
 	}
 	
 	func startMonitoring() {
-		locationManager.allowsBackgroundLocationUpdates = true
 		locationManager.startMonitoringSignificantLocationChanges()
 	}
 	
