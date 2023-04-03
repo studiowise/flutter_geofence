@@ -155,7 +155,7 @@ class GeofenceManager(
     private fun refreshLocation() {
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                locationUpdate(locationResult.lastLocation)
+                locationResult.lastLocation?.let { locationUpdate(it) }
             }
         }
 
@@ -182,8 +182,7 @@ class GeofenceManager(
 
     private val backgroundLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult
-            backgroundUpdate(locationResult.lastLocation)
+            locationResult.lastLocation?.let { backgroundUpdate(it) }
         }
     }
 

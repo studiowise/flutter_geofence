@@ -107,11 +107,10 @@ class _MyAppState extends State<MyApp> {
     var initializationSettingsAndroid =
         new AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS =
-        IOSInitializationSettings(onDidReceiveLocalNotification: null);
+    DarwinInitializationSettings(onDidReceiveLocalNotification: null);
     var initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
-    flutterLocalNotificationsPlugin.initialize(initializationSettings,
-        onSelectNotification: null);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
     if (await Permission.location.request().isGranted) {
       final locationAlways =
@@ -154,7 +153,7 @@ class _MyAppState extends State<MyApp> {
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'your channel id', 'your channel name',
         importance: Importance.high, priority: Priority.high, ticker: 'ticker');
-    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var iOSPlatformChannelSpecifics = DarwinNotificationDetails();
     var platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOSPlatformChannelSpecifics);

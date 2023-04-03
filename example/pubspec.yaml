@@ -11,11 +11,11 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
-  flutter_local_notifications: ^9.3.2
-  permission_handler: ^9.2.0
-  geocoding: ^2.0.4
-  rxdart: ^0.27.5
+  cupertino_icons: ^1.0.5
+  flutter_local_notifications: ^13.0.0
+  permission_handler: ^10.2.0
+  geocoding: ^2.1.0
+  rxdart: ^0.27.7
 
 dev_dependencies:
   flutter_test:
