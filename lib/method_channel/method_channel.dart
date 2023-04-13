@@ -25,7 +25,7 @@ void _geofenceCallbackDispatcher() {
     print("geofence_background: ${call.method}");
     if (call.method == 'GeofenceBackground#onMessage') {
       final CallbackHandle handle =
-          CallbackHandle.fromRawHandle(call.arguments['userCallbackHandle']);
+          CallbackHandle.fromRawHandle(call.arguments["geofenceUserCallbackHandle"]);
 
       // PluginUtilities.getCallbackFromHandle performs a lookup based on the
       // callback handle and returns a tear-off of the original callback.
@@ -177,7 +177,7 @@ class MethodChannelGeofence extends GeofencePlatform {
           PluginUtilities.getCallbackHandle(handler)!;
       await channel.invokeMapMethod('Geofence#startBackgroundIsolate', {
         'pluginCallbackHandle': bgHandle.toRawHandle(),
-        'userCallbackHandle': userHandle.toRawHandle(),
+        "geofenceUserCallbackHandle": userHandle.toRawHandle(),
       });
     }
   }

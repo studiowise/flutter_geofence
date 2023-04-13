@@ -12,7 +12,7 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
     var initialized = false
     let eventTypePosition = 0
     let eventTypeLyfecycle = 1
-    let keyCallbackHandle = "callback_handle"
+    let keyCallbackHandle = "geofence_user_callback_handle"
     let keyCallbackDispatcherHandle = "callback_dispatcher_handle"
     let keyIsTrecking = "is_trecking"
     
@@ -138,7 +138,7 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
         let map = call.arguments as! NSDictionary
         guard
             let callbackDispatcherHandle = map["pluginCallbackHandle"] as? Int64,
-            let callbackHandle = map["userCallbackHandle"] as? Int64
+            let callbackHandle = map["geofenceUserCallbackHandle"] as? Int64
             else {return}
         saveHandle(callbackDispatcherHandle, forKey: keyCallbackDispatcherHandle)
         saveHandle(callbackHandle, forKey: keyCallbackHandle)
@@ -239,7 +239,7 @@ extension SwiftFlutterGeofencePlugin {
         
         let updateMap = [
             "type"              : eventTypePosition,
-            "userCallbackHandle"    : getHandle(forKey: keyCallbackHandle),
+            "geofenceUserCallbackHandle"    : getHandle(forKey: keyCallbackHandle),
             "geoRegion"       : regionMap
         ] as [String : Any]
         

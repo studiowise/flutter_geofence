@@ -71,7 +71,7 @@ class FlutterGeofencePlugin() : FlutterPlugin, MethodCallHandler, ActivityAware,
                 var userCallbackHandle: Long = 0
 
                 val arg1 = arguments?.get("pluginCallbackHandle")
-                val arg2 = arguments?.get("userCallbackHandle")
+                val arg2 = arguments?.get("geofenceUserCallbackHandle")
 
                 pluginCallbackHandle = if (arg1 is Long) {
                     arg1

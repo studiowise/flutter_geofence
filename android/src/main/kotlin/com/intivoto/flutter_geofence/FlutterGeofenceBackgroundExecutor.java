@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class FlutterGeofenceBackgroundExecutor implements MethodCallHandler {
     private static final String TAG = "FLTFireBGExecutor";
     private static final String CALLBACK_HANDLE_KEY = "callback_handle";
-    private static final String USER_CALLBACK_HANDLE_KEY = "user_callback_handle";
+    private static final String USER_CALLBACK_HANDLE_KEY = "geofence_user_callback_handle";
 
     private final AtomicBoolean isCallbackDispatcherReady = new AtomicBoolean(false);
     /**
@@ -236,7 +236,7 @@ public class FlutterGeofenceBackgroundExecutor implements MethodCallHandler {
                     "GeofenceBackground#onMessage",
                     new HashMap<String, Object>() {
                         {
-                            put("userCallbackHandle", getUserCallbackHandle());
+                            put("geofenceUserCallbackHandle", getUserCallbackHandle());
                             put("geoRegion", geoRegionMap);
                         }
                     },
