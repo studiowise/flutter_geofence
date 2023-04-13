@@ -56,6 +56,8 @@ class GeofenceManager: NSObject, CLLocationManagerDelegate {
 		self.backgroundLocationUpdated = backgroundLocationUpdated
 		super.init()
 		locationManager.delegate = self
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
 	}
 	
 	func requestPermissions() {
