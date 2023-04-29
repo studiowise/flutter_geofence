@@ -56,7 +56,20 @@ class GeofenceManager: NSObject, CLLocationManagerDelegate {
 		self.backgroundLocationUpdated = backgroundLocationUpdated
 		super.init()
 		locationManager.delegate = self
-        locationManager.allowsBackgroundLocationUpdates = true
+        if let infoPlist = Bundle.main.infoDictionary,
+           let backgroundModes = infoPlist["UIBackgroundModes"] as? [String] {
+            if backgroundModes.contains("location") {
+                // The UIBackgroundMode for "location" is added
+                print("Background mode for location is added.")
+                locationManager.allowsBackgroundLocationUpdates = true
+            } else {
+                // The UIBackgroundMode for "location" is not added
+                print("Background mode for location is not added.")
+            }
+        } else {
+            // The UIBackgroundModes key is not present in Info.plist
+            print("Background modes are not configured in Info.plist.")
+        }
         locationManager.pausesLocationUpdatesAutomatically = false
 	}
 	
