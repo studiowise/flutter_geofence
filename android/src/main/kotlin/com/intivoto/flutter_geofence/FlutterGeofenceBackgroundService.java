@@ -62,14 +62,14 @@ public class FlutterGeofenceBackgroundService extends JobIntentService {
 
     static void onInitialized() {
         Log.i(TAG, "FlutterGeofenceBackgroundService started!");
-        synchronized (messagingQueue) {
-            // Handle all the message events received before the Dart isolate was
-            // initialized, then clear the queue.
-            for (Intent intent : messagingQueue) {
-                flutterBackgroundExecutor.executeDartCallbackInBackgroundIsolate(intent, null);
-            }
-            messagingQueue.clear();
-        }
+//        synchronized (messagingQueue) {
+//            // Handle all the message events received before the Dart isolate was
+//            // initialized, then clear the queue.
+//            for (Intent intent : messagingQueue) {
+//                flutterBackgroundExecutor.executeDartCallbackInBackgroundIsolate(intent, null);
+//            }
+//            messagingQueue.clear();
+//        }
     }
 
     /**
@@ -109,13 +109,13 @@ public class FlutterGeofenceBackgroundService extends JobIntentService {
 
         // If we're in the middle of processing queued messages, add the incoming
         // intent to the queue and return.
-        synchronized (messagingQueue) {
-            if (flutterBackgroundExecutor.isNotRunning()) {
-                Log.i(TAG, "Service has not yet started, messages will be queued.");
-                messagingQueue.add(intent);
-                return;
-            }
-        }
+//        synchronized (messagingQueue) {
+//            if (flutterBackgroundExecutor.isNotRunning()) {
+//                Log.i(TAG, "Service has not yet started, messages will be queued.");
+//                messagingQueue.add(intent);
+//                return;
+//            }
+//        }
 
         // There were no pre-existing callback requests. Execute the callback
         // specified by the incoming intent.

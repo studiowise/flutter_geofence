@@ -153,11 +153,11 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
             self.initialized = true
             // Send the geofence events that occurred while the background
             // isolate was initializing.
-            while (_eventQueue.count > 0) {
-                let updateMap = _eventQueue[0] as! [String : Any]
-                _eventQueue.removeObject(at: 0)
-                sendEvent(updateMap)
-            }
+//            while (_eventQueue.count > 0) {
+//                let updateMap = _eventQueue[0] as! [String : Any]
+//                _eventQueue.removeObject(at: 0)
+//                sendEvent(updateMap)
+//            }
         }
         
         result(nil);
@@ -194,9 +194,10 @@ public class SwiftFlutterGeofencePlugin: NSObject, FlutterPlugin {
         synchronized(self) {
             if (initialized) {
                 self.sendEvent(updateMap)
-            } else {
-                _eventQueue.add(updateMap)
             }
+//            else {
+//                _eventQueue.add(updateMap)
+//            }
         }
 	}
 	
