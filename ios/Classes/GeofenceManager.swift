@@ -85,7 +85,7 @@ class GeofenceManager: NSObject, CLLocationManagerDelegate {
 			region.notifyOnEntry = georegion.events.contains(.entry)
 			region.notifyOnExit = georegion.events.contains(.exit)
 			locationManager.startMonitoring(for: region)
-			locationManager.requestState(for: region)
+//			locationManager.requestState(for: region)
 		}
 	}
 	
@@ -94,7 +94,7 @@ class GeofenceManager: NSObject, CLLocationManagerDelegate {
 			let center = CLLocationCoordinate2D(latitude: georegion.latitude, longitude: georegion.longitude)
 			let region = CLCircularRegion(center: center, radius: georegion.radius, identifier: georegion.id)
 			locationManager.stopMonitoring(for: region)
-			locationManager.requestState(for: region)
+//			locationManager.requestState(for: region)
 		}
 	}
 	
